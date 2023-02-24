@@ -1,9 +1,11 @@
 {
   "name": "nlw-habits-server",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "src/server.ts",
   "scripts": {
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node build/src/server.js"
   },
   "author": "",
   "license": "ISC",
