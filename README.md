@@ -1,5 +1,6 @@
  <h1 align="center">
-    <img alt="Habits" src="./.github/logo.svg" />
+    <img alt="Habits" src="./.github/logoLight.svg#gh-dark-mode-only" />
+    <img alt="Habits" src="./.github/logoDark.svg#gh-light-mode-only" />
 </h1>
 
 <p align="center">
