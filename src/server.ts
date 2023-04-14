@@ -1,16 +1,34 @@
-import Fastify from 'fastify'
-import cors from '@fastify/cors'
-import { appRoutes } from './routes'
-import './lib/dayjs'
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import jwt from '@fastify/jwt';
+import cookie from '@fastify/cookie';
+import * as dotenv from 'dotenv';
 
-const app = Fastify()
+import { appRoutes } from './routes';
+import './lib/dayjs';
 
-app.register(cors)
-app.register(appRoutes)
+const app = Fastify();
 
-app.listen({
-  port: process.env.PORT ? Number(process.env.PORT) : 8080,
-  host: '0.0.0.0'
-}).then(()=>{
-  console.log('HTTP server running!')
-})
+dotenv.config();
+
+app.register(cookie);
+
+app.register(cors, {
+  origin: [`${process.env.CLIENT_BASE_URL}`],
+  methods: 'GET,POST,PATCH',
+});
+
+app.register(jwt, {
+  secret: process.env.JWT_SECRET as string,
+});
+
+app.register(appRoutes);
+
+app
+  .listen({
+    port: process.env.PORT ? Number(process.env.PORT) : 8080,
+    host: '0.0.0.0',
+  })
+  .then(() => {
+    console.log('HTTP server running!');
+  });
