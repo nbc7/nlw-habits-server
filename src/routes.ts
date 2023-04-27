@@ -14,10 +14,17 @@ export async function appRoutes(app: FastifyInstance) {
     const createHabitBody = z.object({
       title: z.string(),
       weekDays: z.array(z.number().min(0).max(6)),
+      email: z.string(),
     });
-    const { title, weekDays } = createHabitBody.parse(request.body);
+    const { title, weekDays, email } = createHabitBody.parse(request.body);
 
     const today = dayjs.tz(undefined).startOf('day').toDate();
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email: email,
+      },
+    });
 
     await prisma.habit.create({
       data: {
@@ -30,11 +37,17 @@ export async function appRoutes(app: FastifyInstance) {
             };
           }),
         },
+        userId: user?.id,
       },
     });
   });
 
-  app.get('/day', async (request) => {
+  app.post('/day', async (request) => {
+    const getUserBody = z.object({
+      userEmail: z.string(),
+    });
+    const { userEmail } = getUserBody.parse(request.body);
+
     const getDayParams = z.object({
       date: z.coerce.date(),
     });
@@ -43,6 +56,12 @@ export async function appRoutes(app: FastifyInstance) {
 
     const parsedDate = dayjs.tz(date).startOf('day');
     const weekDay = parsedDate.get('day');
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email: userEmail,
+      },
+    });
 
     const possibleHabits = await prisma.habit.findMany({
       where: {
@@ -54,6 +73,7 @@ export async function appRoutes(app: FastifyInstance) {
             week_day: weekDay,
           },
         },
+        userId: user?.id,
       },
     });
 
@@ -62,7 +82,13 @@ export async function appRoutes(app: FastifyInstance) {
         date: parsedDate.toDate(),
       },
       include: {
-        dayHabits: true,
+        dayHabits: {
+          where: {
+            habit: {
+              userId: user?.id,
+            },
+          },
+        },
       },
     });
 
@@ -125,16 +151,30 @@ export async function appRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/summary', async () => {
+  app.post('/summary', async (request) => {
+    const getUserBody = z.object({
+      userEmail: z.string(),
+    });
+    const { userEmail } = getUserBody.parse(request.body);
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email: userEmail,
+      },
+    });
+
     const summary = await prisma.$queryRaw`
-      SELECT 
-        D.id, 
+      SELECT
+        D.id,
         D.date,
         (
           SELECT
             cast(count(*) as float)
           FROM day_habits DH
+          JOIN habits H
+            ON H.id = DH.habit_id
           WHERE DH.day_id = D.id
+            AND H.userId = ${user?.id}
         ) as completed,
         (
           SELECT
@@ -145,8 +185,17 @@ export async function appRoutes(app: FastifyInstance) {
           WHERE
             HWD.week_day = cast(strftime('%w', D.date/1000.0, 'unixepoch') as int)
             AND h.created_at <= D.date
+            AND H.userId = ${user?.id}
         ) as amount
       FROM days D
+      WHERE EXISTS (
+        SELECT 1
+        FROM day_habits DH
+        JOIN habits H
+          ON H.id = DH.habit_id
+        WHERE DH.day_id = D.id
+          AND H.userId = ${user?.id}
+      )
     `;
 
     return summary;
