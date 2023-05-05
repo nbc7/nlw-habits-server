@@ -4,7 +4,10 @@ import jwt from '@fastify/jwt';
 import cookie from '@fastify/cookie';
 import * as dotenv from 'dotenv';
 
-import { appRoutes } from './routes';
+import { userRoutes } from './routes/userRoutes';
+import { habitsRoutes } from './routes/habitsRoutes';
+import { authRoutes } from './routes/authRoutes';
+
 import './lib/dayjs';
 
 const app = Fastify();
@@ -22,7 +25,9 @@ app.register(jwt, {
   secret: process.env.JWT_SECRET as string,
 });
 
-app.register(appRoutes);
+app.register(habitsRoutes);
+app.register(authRoutes);
+app.register(userRoutes);
 
 app
   .listen({
