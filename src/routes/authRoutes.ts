@@ -87,10 +87,8 @@ export async function authRoutes(app: FastifyInstance) {
 
     const tokens = await response.json();
     const jwtToken = app.jwt.sign({ token: tokens.access_token });
-    const jwtRefreshToken = app.jwt.sign({ refreshToken: tokens.refresh_token });
 
     reply.cookie('habits.google.credentials', jwtToken, { maxAge: 15 * 60, path: '/', secure: true, sameSite: 'strict' });
-    reply.cookie('habits.google.refresh', jwtRefreshToken, { maxAge: 7 * 24 * 60 * 60, path: '/', secure: true, sameSite: 'strict' });
 
     return;
   });
