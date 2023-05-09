@@ -59,8 +59,40 @@ export async function authRoutes(app: FastifyInstance) {
 
     const tokens = await response.json();
     const jwtToken = app.jwt.sign({ token: tokens.access_token });
+    const jwtRefreshToken = app.jwt.sign({ refreshToken: tokens.refresh_token });
+
+    reply.cookie('habits.google.refresh', jwtRefreshToken, { maxAge: 7 * 24 * 60 * 60, path: '/', secure: true, sameSite: 'strict' });
 
     return reply.redirect(`${process.env.CLIENT_BASE_URL}/?access=${jwtToken}`);
+  });
+
+  app.get('/login/refresh', async (req, reply) => {
+    const getRefreshToken = z.string();
+    const refreshCookie = getRefreshToken.parse(req.cookies['habits.google.refresh']);
+
+    const { refreshToken } = app.jwt.verify(refreshCookie) as { refreshToken: string };
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.GOOGLE_CLIENT_ID as string,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET as string,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+
+    const tokens = await response.json();
+    const jwtToken = app.jwt.sign({ token: tokens.access_token });
+    const jwtRefreshToken = app.jwt.sign({ refreshToken: tokens.refresh_token });
+
+    reply.cookie('habits.google.credentials', jwtToken, { maxAge: 15 * 60, path: '/', secure: true, sameSite: 'strict' });
+    reply.cookie('habits.google.refresh', jwtRefreshToken, { maxAge: 7 * 24 * 60 * 60, path: '/', secure: true, sameSite: 'strict' });
+
+    return;
   });
 
   app.get(

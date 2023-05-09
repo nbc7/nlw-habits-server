@@ -19,6 +19,7 @@ app.register(cookie);
 app.register(cors, {
   origin: [`${process.env.CLIENT_BASE_URL}`],
   methods: 'GET,POST,PATCH',
+  credentials: true,
 });
 
 app.register(jwt, {
