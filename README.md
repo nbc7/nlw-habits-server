@@ -48,7 +48,7 @@ Install dependencies
 npm install
 ```
 
-Rename the `.env.example` file to `.env` and make changes if you need
+Rename the `.env.example` file to `.env` and replace the placeholder values with your actual Google OAuth 2.0 app information.
 
 Run the migrations
 
