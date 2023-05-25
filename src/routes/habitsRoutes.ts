@@ -4,7 +4,42 @@ import dayjs from 'dayjs';
 
 import { prisma } from '../lib/prisma';
 
+interface UserHabit {
+  created_at: Date;
+  id: string;
+  title: string;
+  userId: string | null;
+  weekDays: { week_day: number }[] | number[];
+}
+
 export async function habitsRoutes(app: FastifyInstance) {
+  app.post('/habits', async (req) => {
+    const usernameBody = z.object({ username: z.string() });
+    const { username } = usernameBody.parse(req.body);
+
+    let userHabits: UserHabit[] = await prisma.habit.findMany({
+      where: {
+        user: {
+          username: username,
+        },
+      },
+      include: {
+        weekDays: {
+          select: {
+            week_day: true,
+          },
+        },
+      },
+    });
+
+    userHabits = userHabits.map((habit) => ({
+      ...habit,
+      weekDays: habit.weekDays.map((day: any) => day.week_day),
+    }));
+
+    return { userHabits };
+  });
+
   app.post('/habits/new', async (request) => {
     const createHabitBody = z.object({
       title: z.string(),
