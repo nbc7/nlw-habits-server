@@ -8,6 +8,24 @@ import { authenticate } from '../plugins/authenticate';
 
 dotenv.config();
 
+async function generateUniqueUsername(username: string) {
+  let uniqueUsername = username;
+  let identifier = 1;
+
+  while (true) {
+    const usernameExists = await prisma.user.findUnique({
+      where: { username: username },
+    });
+
+    if (!usernameExists) break;
+
+    uniqueUsername = `${username}${identifier}`;
+    identifier++;
+  }
+
+  return uniqueUsername;
+}
+
 export async function authRoutes(app: FastifyInstance) {
   app.get('/login', (_, reply) => {
     const state = uuidv4();
@@ -131,12 +149,26 @@ export async function authRoutes(app: FastifyInstance) {
     });
 
     if (!user) {
+      const username = await generateUniqueUsername(userInfo.email.split('@')[0]);
+
       user = await prisma.user.create({
         data: {
           googleId: userInfo.id,
           name: userInfo.name,
+          username: username,
           email: userInfo.email,
           avatarUrl: userInfo.picture,
+        },
+      });
+    } else if (!user.username) {
+      const username = await generateUniqueUsername(userInfo.email.split('@')[0]);
+
+      user = await prisma.user.update({
+        where: {
+          googleId: userInfo.id,
+        },
+        data: {
+          username: username,
         },
       });
     }
@@ -144,6 +176,7 @@ export async function authRoutes(app: FastifyInstance) {
     const userToken = app.jwt.sign(
       {
         name: user.name,
+        username: user.username,
         email: user.email,
         avatarUrl: user.avatarUrl,
       },
