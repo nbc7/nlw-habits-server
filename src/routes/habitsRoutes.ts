@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { prisma } from '../lib/prisma';
 
 export async function habitsRoutes(app: FastifyInstance) {
-  app.post('/habits', async (request) => {
+  app.post('/habits/new', async (request) => {
     const createHabitBody = z.object({
       title: z.string(),
       weekDays: z.array(z.number().min(0).max(6)),
